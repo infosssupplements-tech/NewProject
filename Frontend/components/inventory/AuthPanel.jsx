@@ -37,7 +37,7 @@ export default function AuthPanel({ onAuthenticated }) {
       if (step === "credentials") {
         setStep("verification");
         setResendSeconds(15);
-      } else onAuthenticated(data);
+      } else await onAuthenticated(data);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
