@@ -83,13 +83,42 @@ export function hashInvitationToken(token) {
   return sign(`invite:${token}`);
 }
 
+function getAppsScriptEmailConfig() {
+  const candidates = [
+    { url: process.env.APPS_SCRIPT_EMAIL_API_URL_3, apiKey: process.env.APPS_SCRIPT_API_KEY_3 },
+    { url: process.env.APPS_SCRIPT_EMAIL_API_URL_2, apiKey: process.env.APPS_SCRIPT_API_KEY_2 },
+    { url: process.env.APPS_SCRIPT_EMAIL_API_URL, apiKey: process.env.APPS_SCRIPT_API_KEY },
+  ];
+  return candidates.find(({ url, apiKey }) => {
+    if (!url || !apiKey) return false;
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "https:" && ["script.google.com", "script.googleusercontent.com"].includes(parsed.hostname) && parsed.pathname.includes("/macros/s/") && parsed.pathname.endsWith("/exec");
+    } catch {
+      return false;
+    }
+  }) || { url: "", apiKey: "" };
+}
+
 export async function sendIntegrationEmail(to, subject, message) {
-  const emailUrl = process.env.APPS_SCRIPT_EMAIL_API_URL_3 || process.env.APPS_SCRIPT_EMAIL_API_URL;
-  const emailKey = process.env.APPS_SCRIPT_API_KEY_3 || process.env.APPS_SCRIPT_API_KEY;
-  if (!emailUrl || !emailKey) return false;
+  const { url, apiKey } = getAppsScriptEmailConfig();
+  if (!url || !apiKey) return false;
   try {
-    const response = await fetch(emailUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: emailKey, to, subject, message }), cache: "no-store", signal: AbortSignal.timeout(10000) });
-    return response.ok;
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: apiKey, to, subject, message }), cache: "no-store", signal: AbortSignal.timeout(10000) });
+    const result = await response.json();
+    return response.ok && result?.success === true;
+  } catch {
+    return false;
+  }
+}
+
+async function sendLoginOtpEmail(recipient, otp) {
+  const { url, apiKey } = getAppsScriptEmailConfig();
+  if (!url || !apiKey) return false;
+  try {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: apiKey, recipient, otp }), cache: "no-store", signal: AbortSignal.timeout(10000) });
+    const result = await response.json();
+    return response.ok && result?.success === true;
   } catch {
     return false;
   }
@@ -110,7 +139,7 @@ export async function sendLoginCode(email) {
   const ttl = Math.min(900, Math.max(60, Number(process.env.OTP_TTL_SECONDS) || 600));
   await otpCollection.updateOne({ email, purpose: "login" }, { $set: { codeHash: otpHash(email, code), attempts: 0, expiresAt: new Date(Date.now() + ttl * 1000), createdAt: now } }, { upsert: true });
   await otpCollection.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-  const delivered = await sendIntegrationEmail(email, "SS Supplement sign-in code", `Your sign-in code is ${code}. It expires in ${Math.ceil(ttl / 60)} minutes.`);
+  const delivered = await sendLoginOtpEmail(email, code);
   if (!delivered) {
     await otpCollection.deleteOne({ email, purpose: "login" });
     return { error: "Could not deliver the verification email." };
