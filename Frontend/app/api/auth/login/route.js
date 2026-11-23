@@ -21,7 +21,7 @@ export async function POST(request) {
     if (!valid) return Response.json({ error: "Email or password is incorrect." }, { status: 401 });
 
     const result = await sendLoginCode(email);
-    if (result.error) return Response.json({ error: result.error }, { status: 503 });
+    if (result.error) return Response.json({ error: result.error, retryAfterSeconds: result.retryAfterSeconds }, { status: result.rateLimited ? 429 : 503 });
     return Response.json({ verificationRequired: true });
   } catch (error) {
     console.error("Inventory login failed:", error);

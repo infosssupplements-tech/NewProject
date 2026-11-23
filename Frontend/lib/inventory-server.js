@@ -97,9 +97,13 @@ export async function sendLoginCode(email) {
   const db = await database();
   const otpCollection = db.collection("otp_verifications");
   const now = new Date();
-  const cooldown = new Date(Date.now() - 60_000);
+  const cooldownMs = 15_000;
+  const cooldown = new Date(now.getTime() - cooldownMs);
   const recent = await otpCollection.findOne({ email, purpose: "login", createdAt: { $gt: cooldown } });
-  if (recent) return { error: "Please wait before requesting another code." };
+  if (recent) {
+    const retryAfterSeconds = Math.max(1, Math.ceil((recent.createdAt.getTime() + cooldownMs - now.getTime()) / 1000));
+    return { error: "Please wait before requesting another code.", retryAfterSeconds, rateLimited: true };
+  }
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   const ttl = Math.min(900, Math.max(60, Number(process.env.OTP_TTL_SECONDS) || 600));
   await otpCollection.updateOne({ email, purpose: "login" }, { $set: { codeHash: otpHash(email, code), attempts: 0, expiresAt: new Date(Date.now() + ttl * 1000), createdAt: now } }, { upsert: true });
