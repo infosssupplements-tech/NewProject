@@ -1,4 +1,4 @@
-import { database, issueSession, verifyLoginCode } from "../../../../lib/inventory-server.js";
+import { adminEmail, database, issueSession, verifyLoginCode } from "../../../../lib/inventory-server.js";
 import { ObjectId } from "mongodb";
 
 export const runtime = "nodejs";
@@ -11,7 +11,6 @@ export async function POST(request) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) return Response.json({ error: "Enter the six-digit verification code." }, { status: 400 });
     if (!await verifyLoginCode(email, code)) return Response.json({ error: "The code is incorrect or expired." }, { status: 401 });
 
-    const adminEmail = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
     let identity;
     if (email === adminEmail && adminEmail) {
       identity = { id: "super-admin", role: "SUPER_ADMIN", name: "SS Supplement Admin", email };

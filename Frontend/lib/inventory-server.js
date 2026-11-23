@@ -3,9 +3,11 @@ import { cookies } from "next/headers";
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 
-const uri = process.env.MONGODB_CONNECTION_STRING || process.env.MONGODB_URI;
-const databaseName = process.env.MONGODB_DB;
-const secret = process.env.AUTH_SECRET;
+const uri = process.env.MONGODB_URI_2 || process.env.MONGODB_CONNECTION_STRING || process.env.MONGODB_URI;
+const databaseName = process.env.MONGODB_DB_3 || process.env.MONGODB_DB;
+const secret = process.env.AUTH_SECRET_3 || process.env.AUTH_SECRET;
+export const adminEmail = String(process.env.ADMIN_EMAIL_3 || process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+export const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH_3 || process.env.ADMIN_PASSWORD_HASH;
 let clientPromise;
 
 export function database() {
@@ -82,8 +84,8 @@ export function hashInvitationToken(token) {
 }
 
 export async function sendIntegrationEmail(to, subject, message) {
-  const emailUrl = process.env.APPS_SCRIPT_EMAIL_API_URL;
-  const emailKey = process.env.APPS_SCRIPT_API_KEY;
+  const emailUrl = process.env.APPS_SCRIPT_EMAIL_API_URL_3 || process.env.APPS_SCRIPT_EMAIL_API_URL;
+  const emailKey = process.env.APPS_SCRIPT_API_KEY_3 || process.env.APPS_SCRIPT_API_KEY;
   if (!emailUrl || !emailKey) return false;
   try {
     const response = await fetch(emailUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: emailKey, to, subject, message }), cache: "no-store", signal: AbortSignal.timeout(10000) });

@@ -1,4 +1,4 @@
-import { database, sendLoginCode, verifyPassword } from "../../../../lib/inventory-server.js";
+import { adminEmail, adminPasswordHash, database, sendLoginCode, verifyPassword } from "../../../../lib/inventory-server.js";
 
 export const runtime = "nodejs";
 
@@ -9,10 +9,9 @@ export async function POST(request) {
     const password = String(body.password || "");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8 || password.length > 256) return Response.json({ error: "Enter a valid email and password." }, { status: 400 });
 
-    const adminEmail = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
     let valid = false;
     if (email === adminEmail && adminEmail) {
-      valid = await verifyPassword(password, process.env.ADMIN_PASSWORD_HASH);
+      valid = await verifyPassword(password, adminPasswordHash);
     } else {
       const db = await database();
       const employee = await db.collection("employees").findOne({ email, active: true, mustSetPassword: { $ne: true } });
