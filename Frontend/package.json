@@ -6,17 +6,24 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:inventory": "next dev --port 3001",
+    "build:inventory": "next build",
+    "start:inventory": "next start --port 3001"
   },
   "dependencies": {
     "ai": "^7.0.140",
+    "bcryptjs": "^3.0.3",
     "lucide-react": "^1.57.0",
+    "mongodb": "^7.9.1",
+    "next": "^16.4.6",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.4",
     "swr": "^2.5.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.5",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^5.0.0",
     "tailwindcss": "^4.3.3",
